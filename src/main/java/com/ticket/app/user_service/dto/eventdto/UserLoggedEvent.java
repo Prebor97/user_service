@@ -14,6 +14,7 @@ public class UserLoggedEvent {
     private String eventType = "UserLoggedIn";
     private String userId;
     private String email;
+    private String name;
     @JsonProperty("login_date")
     private LocalDateTime loginDate;
 }
