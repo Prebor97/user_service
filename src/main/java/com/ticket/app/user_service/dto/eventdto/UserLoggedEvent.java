@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -15,5 +15,5 @@ public class UserLoggedEvent {
     private String userId;
     private String email;
     @JsonProperty("login_date")
-    private LocalDate loginDate;
+    private LocalDateTime loginDate;
 }
