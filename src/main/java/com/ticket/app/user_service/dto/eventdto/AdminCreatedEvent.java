@@ -12,4 +12,5 @@ public class AdminCreatedEvent {
     private String userId;
     private String email;
     private String name;
+    private String password;
 }
