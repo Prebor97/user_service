@@ -11,5 +11,6 @@ public class PasswordResetRequestEvent {
     private String eventType = "UserDeleted";
     private String userId;
     private String email;
+    private String name;
     private String token;
 }
