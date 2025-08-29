@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class LoginDto {
-    private String email;
-    private String password;
+public class CreateAdminRequest {
+private String email;
+private String password;
+private String firstName;
+private String lastName;
 }

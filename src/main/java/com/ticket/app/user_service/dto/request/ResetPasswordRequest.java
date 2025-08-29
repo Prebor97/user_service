@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
-public class LoginDto {
+public class ResetPasswordRequest {
     private String email;
-    private String password;
 }

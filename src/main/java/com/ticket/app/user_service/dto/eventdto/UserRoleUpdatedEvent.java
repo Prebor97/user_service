@@ -11,5 +11,5 @@ public class UserRoleUpdatedEvent {
     private String eventType = "UserDeleted";
     private String userId;
     private String email;
-    private String role = "Admin";
+    private String name;
 }
