@@ -1,24 +1,27 @@
 package com.ticket.app.user_service.dto.eventdto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-//@Data
-//@AllArgsConstructor
-//@RequiredArgsConstructor
-public class PasswordResetRequestEvent {
-    private String eventType = "UserDeleted";
+import java.time.LocalDateTime;
+
+
+
+public class UserLoggedInEvent {
+    private String eventType = "UserLoggedIn";
     private String userId;
     private String email;
     private String name;
-    private String token;
+    @JsonProperty("login_date")
+    private LocalDateTime loginDate;
 
-    public PasswordResetRequestEvent(String userId, String email, String name, String token) {
+    public UserLoggedInEvent(String userId, String email, String name, LocalDateTime loginDate) {
         this.userId = userId;
         this.email = email;
         this.name = name;
-        this.token = token;
+        this.loginDate = loginDate;
     }
 
     public String getUserId() {
@@ -45,11 +48,11 @@ public class PasswordResetRequestEvent {
         this.name = name;
     }
 
-    public String getToken() {
-        return token;
+    public LocalDateTime getLoginDate() {
+        return loginDate;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setLoginDate(LocalDateTime loginDate) {
+        this.loginDate = loginDate;
     }
 }

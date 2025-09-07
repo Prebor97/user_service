@@ -11,10 +11,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "user_profile")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+
 public class UserProfile {
 
     @Id
@@ -53,7 +52,78 @@ public class UserProfile {
     @PrePersist
     public void generateId() {
         if (this.profileId == null) {
-            this.profileId = UUID.randomUUID().toString();  // auto generates string id
+            this.profileId = UUID.randomUUID().toString();
+            this.createdAt = LocalDate.now();
+            // auto generates string id
         }
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+
+    public LocalDate getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDate updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public UserInfo getUserInfo() {
+        return userInfo;
+    }
+
+    public void setUserInfo(UserInfo userInfo) {
+        this.userInfo = userInfo;
     }
 }
