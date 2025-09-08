@@ -20,6 +20,7 @@ import com.ticket.app.user_service.repository.PasswordResetTokenRepository;
 import com.ticket.app.user_service.repository.UserInfoRepository;
 import com.ticket.app.user_service.repository.UserProfileRepository;
 import com.ticket.app.user_service.util.EmailSubject;
+import com.ticket.app.user_service.util.EventUtil;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -47,13 +48,14 @@ public class AuthService {
     private static final SecureRandom secureRandom = new SecureRandom();
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();
     private final UserProfileRepository userProfileRepository;
+    private final EventUtil eventUtil;
 
 
     public AuthService(UserInfoRepository repository, PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager, JwtUtils jwtUtils,
                        KafkaTemplate<String, Object> kafkaTemplate,
                        PasswordResetTokenRepository resetTokenRepository,
-                       UserProfileRepository userProfileRepository) {
+                       UserProfileRepository userProfileRepository, EventUtil eventUtil) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
@@ -62,6 +64,7 @@ public class AuthService {
         this.kafkaTemplate = kafkaTemplate;
         this.resetTokenRepository = resetTokenRepository;
         this.userProfileRepository = userProfileRepository;
+        this.eventUtil = eventUtil;
     }
 
     @Transactional
@@ -89,15 +92,9 @@ public class AuthService {
 
         UserInfo savedUser = repository.save(user);
         System.out.println("User id : "+ savedUser.getUserId());
-        UserEvents events = new UserEvents();
-        events.setSubject(EmailSubject.USER_REGISTERED_SUBJECT);
-        events.setUserId(savedUser.getUserId());
-        events.setEmail(savedUser.getEmail());
-        events.setName(profile.getLastName() +" "+profile.getFirstName());
-        kafkaTemplate.send("user-topics",events);
+        eventUtil.sendNormalEvent(savedUser,EmailSubject.USER_REGISTERED_SUBJECT);
         return new UserResponse(jwtUtils.generateToken(savedUser),
                 "User registered successfully", LocalDateTime.now());
-
     }
 
     public String activateAccount(String userId){
@@ -125,13 +122,8 @@ public class AuthService {
             }
             user.setLastLoginAt(LocalDate.now());
             repository.save(user);
-            UserEvents events = new UserEvents();
-            events.setSubject(EmailSubject.USER_LOGGED_IN_SUBJECT);
-            events.setUserId(user.getUserId());
-            events.setEmail(user.getEmail());
-            events.setName(user.getUserProfile().getLastName()+" "+user.getUserProfile().getFirstName());
-            events.setLoginDate(LocalDateTime.now().toString());
-            kafkaTemplate.send("user-topics",events);
+            eventUtil.sendLastLoggedEvent(user,EmailSubject.USER_LOGGED_IN_SUBJECT,
+                    LocalDateTime.now().toString());
             token = jwtUtils.generateToken(user);
         }
         return new UserResponse(token, "User Logged In Successfully", LocalDateTime.now());
@@ -170,12 +162,7 @@ public class AuthService {
                 () -> new InvalidTokenException("Invalid or expired token"));
     user.setRole(updatedRequest.getRole());
     repository.save(user);
-    UserEvents events = new UserEvents();
-    events.setSubject(EmailSubject.USER_ROLE_UPDATED_SUBJECT);
-    events.setUserId(user.getUserId());
-    events.setEmail(user.getEmail());
-    events.setName(user.getUserProfile().getLastName()+" "+user.getUserProfile().getFirstName());
-    kafkaTemplate.send("user-topic",events);
+   eventUtil.sendNormalEvent(user,EmailSubject.USER_ROLE_UPDATED_SUBJECT);
     return new UserResponse("Role updated",LocalDateTime.now());
     }
 
@@ -199,13 +186,7 @@ public class AuthService {
         adminProfile.setLastName(request.getLastName());
         admin.setUserProfile(adminProfile);
         repository.save(admin);
-        UserEvents events = new UserEvents();
-        events.setSubject(EmailSubject.ADMIN_CREATED_SUBJECT);
-        events.setUserId(admin.getUserId());
-        events.setName(adminProfile.getLastName()+" "+adminProfile.getFirstName());
-        events.setEmail(admin.getEmail());
-        events.setPassword(admin.getPassword());
-        kafkaTemplate.send("user-topics",events);
+        eventUtil.sendAminCreatedEvent(admin,EmailSubject.ADMIN_CREATED_SUBJECT);
             return new RoleResponse("Admin Created Successfully",LocalDateTime.now());
         }
 
@@ -235,14 +216,7 @@ public class AuthService {
             resetToken.setExpiryDate(expiry);
             resetToken.setUserId(userId);
             resetTokenRepository.save(resetToken);
-
-            UserEvents events = new UserEvents();
-            events.setSubject(EmailSubject.PASSWORD_RESET_SUBJECT);
-            events.setUserId(user.getUserId());
-            events.setEmail(user.getEmail());
-            events.setName(user.getUserProfile().getLastName()+" "+user.getUserProfile().getFirstName());
-            events.setToken(resetToken.getToken());
-            kafkaTemplate.send("user-topics",events);
+            eventUtil.sendPasswordResetEvent(user,EmailSubject.PASSWORD_RESET_SUBJECT);
             return new RoleResponse("Reset Link sent to mail",LocalDateTime.now());
         }
 
