@@ -122,8 +122,7 @@ public class AuthService {
             }
             user.setLastLoginAt(LocalDate.now());
             repository.save(user);
-            eventUtil.sendLastLoggedEvent(user,EmailSubject.USER_LOGGED_IN_SUBJECT,
-                    LocalDateTime.now().toString());
+            eventUtil.sendLastLoggedEvent(user,EmailSubject.USER_LOGGED_IN_SUBJECT);
             token = jwtUtils.generateToken(user);
         }
         return new UserResponse(token, "User Logged In Successfully", LocalDateTime.now());
@@ -216,7 +215,7 @@ public class AuthService {
             resetToken.setExpiryDate(expiry);
             resetToken.setUserId(userId);
             resetTokenRepository.save(resetToken);
-            eventUtil.sendPasswordResetEvent(user,EmailSubject.PASSWORD_RESET_SUBJECT);
+            eventUtil.sendPasswordResetEvent(user,EmailSubject.PASSWORD_RESET_SUBJECT,token);
             return new RoleResponse("Reset Link sent to mail",LocalDateTime.now());
         }
 
