@@ -30,8 +30,8 @@ public class UserInfo {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    private Role role;
+    @Column(name = "roleType", nullable = false)
+    private Role roleType;
 
     @Column(name = "created_at", nullable = false)
     private LocalDate createdAt;
@@ -75,12 +75,12 @@ public class UserInfo {
         this.password = password;
     }
 
-    public Role getRole() {
-        return role;
+    public Role getRoleType() {
+        return roleType;
     }
 
     public void setRole(Role role) {
-        this.role = role;
+        this.roleType = role;
     }
 
     public LocalDate getCreatedAt() {
