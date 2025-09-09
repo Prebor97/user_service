@@ -8,6 +8,7 @@ import com.ticket.app.user_service.dto.response.RoleResponse;
 import com.ticket.app.user_service.dto.response.UserInfoResponse;
 import com.ticket.app.user_service.dto.response.UserResponse;
 import com.ticket.app.user_service.enums.Role;
+import com.ticket.app.user_service.exceptions.InvalidCredentialsException;
 import com.ticket.app.user_service.exceptions.InvalidTokenException;
 import com.ticket.app.user_service.exceptions.PasswordMismatchException;
 import com.ticket.app.user_service.exceptions.UserNotFoundException;
@@ -21,6 +22,7 @@ import com.ticket.app.user_service.repository.UserProfileRepository;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -87,7 +89,7 @@ public class AuthService {
 
         UserInfo savedUser = repository.save(user);
         UserRegisteredEvent userRegisteredEvent = new UserRegisteredEvent(savedUser.getUserId(),savedUser.getEmail(), profile.getFirstName());
-        kafkaTemplate.send("user-registered-topic", userRegisteredEvent);
+       // kafkaTemplate.send("user-registered-topic", userRegisteredEvent);
 
         return new UserResponse(jwtUtils.generateToken(savedUser),
                 "User registered successfully", LocalDateTime.now());
@@ -95,28 +97,37 @@ public class AuthService {
     }
 
     public UserResponse login(LoginDto dto) {
-        String token = null;
-        Authentication authentication = authenticationManager.
-                authenticate(new UsernamePasswordAuthenticationToken(
-                        dto.getEmail(), dto.getPassword()
-                ));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            dto.getEmail(), dto.getPassword()
+                    )
+            );
 
-        if (authentication.isAuthenticated()) {
             AppUserDetails userDetails = (AppUserDetails) authentication.getPrincipal();
-
             UserInfo user = userDetails.getUserInfo();
 
-            user.setLastLoginAt(LocalDate.now());
 
+            user.setLastLoginAt(LocalDate.now());
             repository.save(user);
 
-            token = jwtUtils.generateToken(user);
-            UserLoggedInEvent userLoggedInEvent = new UserLoggedInEvent(user.getUserId(), user.getEmail(),
-                    user.getUserProfile().getFirstName(), LocalDateTime.now());
-           // kafkaTemplate.send("user-logged-in-topic", userLoggedInEvent);
 
-        } //else throw new RuntimeException();
-        return new UserResponse(token, "User Logged In Succesfully", LocalDateTime.now());
+            String token = jwtUtils.generateToken(user);
+
+
+            UserLoggedInEvent event = new UserLoggedInEvent(
+                    user.getUserId(),
+                    user.getEmail(),
+                    user.getUserProfile().getFirstName(),
+                    LocalDateTime.now()
+            );
+            // kafkaTemplate.send("user-logged-in-topic", event);
+
+            return new UserResponse(token, "User Logged In Successfully", LocalDateTime.now());
+
+        } catch (BadCredentialsException ex) {
+            throw new InvalidCredentialsException("Password or email incorrect");
+        }
     }
 
     public void deleteUser(String userId, Authentication authentication) throws AccessDeniedException {
@@ -199,7 +210,7 @@ public class AuthService {
          UserInfo user = repository.findByEmail(request.getEmail()).orElseThrow(()->
                  new UserNotFoundException("User not found"));
          String userId = user.getUserId();
-             String token = generateToken(32);
+             String token = generateToken();
     LocalDateTime expiry = LocalDateTime.now().plusMinutes(15);
 
             PasswordResetToken resetToken = new PasswordResetToken();
@@ -272,10 +283,9 @@ public class AuthService {
                     user.getUserProfile().getProfilePicture(),"profile updated successfully",LocalDateTime.now());
 
         }
-    public static String generateToken(int byteLength) {
-        byte[] randomBytes = new byte[byteLength];
-        secureRandom.nextBytes(randomBytes);
-        return base64Encoder.encodeToString(randomBytes);
+    public static String generateToken() {
+        int number = secureRandom.nextInt(1_000_000);  // 0 to 999999
+        return String.format("%06d", number);
     }
 
 
