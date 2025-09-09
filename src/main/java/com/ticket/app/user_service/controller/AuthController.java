@@ -1,13 +1,11 @@
 package com.ticket.app.user_service.controller;
 
-import com.ticket.app.user_service.dto.eventdto.UserRegisteredEvent;
 import com.ticket.app.user_service.dto.request.*;
 import com.ticket.app.user_service.dto.response.ProfileResponse;
 import com.ticket.app.user_service.dto.response.RoleResponse;
 import com.ticket.app.user_service.dto.response.UserInfoResponse;
 import com.ticket.app.user_service.dto.response.UserResponse;
 import com.ticket.app.user_service.service.AuthService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-
 @RequestMapping("/v1/api/auth")
 public class AuthController {
 
@@ -35,7 +32,11 @@ public class AuthController {
     @PostMapping("/register")
    public ResponseEntity<UserResponse> register(@RequestBody SignupDto request){
       return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+   }
 
+   @PatchMapping("/activate/{userId}")
+   public ResponseEntity<String> activateUser(@PathVariable String userId){
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.activateAccount(userId));
    }
 
    @PostMapping("/login")
@@ -43,27 +44,30 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
    }
 
-
    @DeleteMapping("/users/{userId}")
    public ResponseEntity<?> deleteUser(@PathVariable String userId, Authentication authentication) throws AccessDeniedException {
-
         authService.deleteUser(userId,authentication);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully",
                 "timestamp", LocalDateTime.now()));
-
    }
-   @PreAuthorize("hasRole('ADMIN')")
+   @PreAuthorize("hasRole('ROLE_ADMIN')")
    @PostMapping("/admins")
    public ResponseEntity<RoleResponse> createAdmin(@RequestBody CreateAdminRequest request,Authentication authentication){
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.createAdmin(request,authentication));
    }
+
+   @PatchMapping("/users/{userId}/role")
+   public ResponseEntity<UserResponse> roleUpdated(@RequestBody RoleUpdatedRequest updatedRequest, Authentication authentication, @PathVariable String userId){
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.updateUserRole(updatedRequest,userId,authentication));
+   }
+
    @GetMapping("/users/{userId}/info")
-   @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.userId")
+   @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == authentication.principal.userId")
    public ResponseEntity<UserInfoResponse> getUserInfo(@PathVariable String userId) {
        return ResponseEntity.status(HttpStatus.OK).body(authService.getUserInfo(userId));
    }
     @PostMapping("/reset-password/request")
-   public ResponseEntity<UserResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
+   public ResponseEntity<RoleResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.resetPassword(request));
 
     }
@@ -73,9 +77,8 @@ public class AuthController {
 
         }
         @PutMapping("profiles/{userId}")
-        @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.userId")
+        @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == authentication.principal.userId")
         public ResponseEntity<ProfileResponse> updateProfile(@RequestBody ProfileUpdateRequest request, @PathVariable String userId){
             return ResponseEntity.status(HttpStatus.OK).body(authService.updateProfile(userId,request));
         }
-
 }

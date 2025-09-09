@@ -20,7 +20,7 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        return List.of(new SimpleGrantedAuthority(user.getRoleType().name()));
     }
 
     @Override
@@ -55,7 +55,7 @@ public class AppUserDetails implements UserDetails {
 
 
     public Role getRole(){
-        return user.getRole();
+        return user.getRoleType();
     }
     public UserInfo getUserInfo(){
         return this.user;

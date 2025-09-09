@@ -48,8 +48,14 @@ public class GlobalExceptionHandler {
         errorResponse.setCode(400);
         errorResponse.setTimestamp(LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-
-
+    }
+    @ExceptionHandler(UserAccountNotActivatedException.class)
+    public ResponseEntity<ErrorResponse> handleUserAccountNotActivatedException(UserAccountNotActivatedException ex){
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setError(ex.getMessage());
+        errorResponse.setCode(403);
+        errorResponse.setTimestamp(LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(InvalidCredentialsException ex){

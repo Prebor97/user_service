@@ -5,9 +5,17 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@RequiredArgsConstructor
+//@Data
+//@AllArgsConstructor
+//@RequiredArgsConstructor
 public class RoleUpdatedRequest {
     private Role role;
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
 }
