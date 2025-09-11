@@ -1,5 +1,7 @@
 package com.ticket.app.user_service.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +12,13 @@ import java.time.LocalDate;
 //@AllArgsConstructor
 //@RequiredArgsConstructor
 public class ProfileUpdateRequest {
-    private String firstName;
-    private String lastName;
+
+     private String firstName;
+     private String lastName;
     private String phoneNumber;
+    @NotBlank(message = "Address is required")
     private String address;
+    @NotBlank(message = "Date of birth is required")
     private LocalDate dateOfBirth;
     private String profilePictureUrl;
 

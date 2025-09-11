@@ -6,6 +6,7 @@ import com.ticket.app.user_service.dto.response.RoleResponse;
 import com.ticket.app.user_service.dto.response.UserInfoResponse;
 import com.ticket.app.user_service.dto.response.UserResponse;
 import com.ticket.app.user_service.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -30,7 +31,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-   public ResponseEntity<UserResponse> register(@RequestBody SignupDto request){
+   public ResponseEntity<UserResponse> register(@Valid @RequestBody SignupDto request){
       return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
    }
 
@@ -45,6 +46,7 @@ public class AuthController {
    }
 
    @DeleteMapping("/users/{userId}")
+   @PreAuthorize("hasRole('ROLE_ADMIN')")
    public ResponseEntity<?> deleteUser(@PathVariable String userId, Authentication authentication) throws AccessDeniedException {
         authService.deleteUser(userId,authentication);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully",
@@ -52,7 +54,7 @@ public class AuthController {
    }
    @PreAuthorize("hasRole('ROLE_ADMIN')")
    @PostMapping("/admins")
-   public ResponseEntity<RoleResponse> createAdmin(@RequestBody CreateAdminRequest request,Authentication authentication){
+   public ResponseEntity<RoleResponse> createAdmin(@Valid @RequestBody CreateAdminRequest request, Authentication authentication){
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.createAdmin(request,authentication));
    }
 
@@ -67,18 +69,30 @@ public class AuthController {
        return ResponseEntity.status(HttpStatus.OK).body(authService.getUserInfo(userId));
    }
     @PostMapping("/reset-password/request")
-   public ResponseEntity<RoleResponse> resetPassword(@RequestBody ResetPasswordRequest request) {
+     public ResponseEntity<RoleResponse> resetPassword( @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.resetPassword(request));
 
     }
         @PostMapping("/reset-password/confirm")
-        public ResponseEntity<UserResponse> confirmReset(@RequestBody ResetPasswordConfirmRequest request){
+        public ResponseEntity<RoleResponse> confirmReset(@Valid @RequestBody ResetPasswordConfirmRequest request){
             return ResponseEntity.status(HttpStatus.OK).body(authService.confirmReset(request));
 
         }
         @PutMapping("profiles/{userId}")
         @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == authentication.principal.userId")
-        public ResponseEntity<ProfileResponse> updateProfile(@RequestBody ProfileUpdateRequest request, @PathVariable String userId){
+        public ResponseEntity<ProfileResponse> updateProfile(@Valid @RequestBody ProfileUpdateRequest request, @PathVariable String userId){
             return ResponseEntity.status(HttpStatus.OK).body(authService.updateProfile(userId,request));
+        }
+
+        @PreAuthorize("#userId == authentication.principal.userId or hasRole('ROLE_ADMIN')")
+        @PatchMapping("/deactivate/{userId}")
+        public ResponseEntity<String> deactivateUser(@PathVariable String userId){
+         return ResponseEntity.status(HttpStatus.OK).body(authService.deactivateAccount(userId));
+        }
+
+        @PostMapping("/{userId}/request-deletion")
+        @PreAuthorize("#userId == authentication.principal.userId")
+        public ResponseEntity<RoleResponse> requestDeletion(@PathVariable String userId, @RequestBody AccountDeletionRequest request){
+        return  ResponseEntity.ok(authService.requestAccountDeletion(userId,request));
         }
 }

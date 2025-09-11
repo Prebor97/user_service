@@ -11,9 +11,9 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class EventUtil {
 
-    private final KafkaTemplate<String, UserEvents> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public EventUtil(KafkaTemplate<String, UserEvents> kafkaTemplate) {
+    public EventUtil(KafkaTemplate<String, Object> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 

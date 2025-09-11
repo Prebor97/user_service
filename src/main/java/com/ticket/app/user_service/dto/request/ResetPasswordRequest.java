@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 //@AllArgsConstructor
 //@RequiredArgsConstructor
 public class ResetPasswordRequest {
+
     private String email;
 
     public String getEmail() {

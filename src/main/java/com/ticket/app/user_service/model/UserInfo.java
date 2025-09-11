@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static java.sql.JDBCType.BIT;
@@ -44,6 +45,9 @@ public class UserInfo {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    private Boolean deletionRequested = false;
+    private LocalDateTime deletionRequestedAt;
 
     // One-to-one mapping with UserProfile
     @OneToOne(mappedBy = "userInfo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -122,5 +126,21 @@ public class UserInfo {
     public void setUserProfile(UserProfile userProfile) {
         this.userProfile = userProfile;
         userProfile.setUserInfo(this);
+    }
+
+    public Boolean getDeletionRequested() {
+        return deletionRequested;
+    }
+
+    public void setDeletionRequested(Boolean deletionRequested) {
+        this.deletionRequested = deletionRequested;
+    }
+
+    public LocalDateTime getDeletionRequestedAt() {
+        return deletionRequestedAt;
+    }
+
+    public void setDeletionRequestedAt(LocalDateTime deletionRequestedAt) {
+        this.deletionRequestedAt = deletionRequestedAt;
     }
 }

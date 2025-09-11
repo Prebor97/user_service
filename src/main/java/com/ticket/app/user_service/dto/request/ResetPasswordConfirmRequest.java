@@ -1,6 +1,8 @@
 package com.ticket.app.user_service.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +11,11 @@ import lombok.RequiredArgsConstructor;
 //@AllArgsConstructor
 //@RequiredArgsConstructor
 public class ResetPasswordConfirmRequest {
+
     private String token;
+
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
     @JsonProperty("confirm_password")
     private String confirmPassword;
