@@ -78,4 +78,10 @@ public class EventUtil {
         events.setLoginDate(deletionDate);
         kafkaTemplate.send("user-topics",events);
     }
+
+    public void EventUserEvent(String userId){
+        UserEvents events = new UserEvents();
+        events.setUserId(userId);
+        kafkaTemplate.send("event-user-topics", events);
+    }
 }
