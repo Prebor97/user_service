@@ -18,7 +18,6 @@ import com.ticket.app.user_service.repository.UserInfoRepository;
 import com.ticket.app.user_service.repository.UserProfileRepository;
 import com.ticket.app.user_service.util.EmailSubject;
 import com.ticket.app.user_service.util.EventUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -34,7 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Base64;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -93,8 +93,7 @@ public class AuthService {
 
     log.info("Saving user-----------------");
         UserInfo savedUser = repository.save(user);
-        log.info("User saved {}",savedUser);
-        System.out.println("User id : "+ savedUser.getUserId());
+        log.info("User saved user with id {} ",savedUser.getUserId());
         eventUtil.sendNormalEvent(savedUser,EmailSubject.USER_REGISTERED_SUBJECT);
         return new UserResponse(jwtUtils.generateToken(savedUser),
                 "User registered successfully", LocalDateTime.now());
@@ -112,12 +111,9 @@ public class AuthService {
     }
 
     public String deactivateAccount(String userId){
-        Optional<UserInfo> user = repository.findById(userId);
-        if (user.isEmpty()){
-            throw new UserNotFoundException("User with id does not exist");
-        }
-        UserInfo userInfo = user.get();
+        UserInfo userInfo = repository.findById(userId).orElseThrow(()->new UserNotFoundException("User with id does not exist"));
         userInfo.setActive(false);
+        eventUtil.sendNormalEvent(userInfo,"Account Deactivation");
         repository.save(userInfo);
         return "Account Deactivated";
     }
@@ -147,38 +143,20 @@ public class AuthService {
     }
 
 
-    public void deleteUser(String userId, Authentication authentication) throws AccessDeniedException {
-        String currentUserEmail = authentication.getName();
-        UserInfo loggedInUser = repository.findByEmail(currentUserEmail).orElseThrow(() ->
-                new UserNotFoundException("User was not found"));
+    public void deleteUser(String userId) throws AccessDeniedException {
         UserInfo userInfo = repository.findById(userId).orElseThrow(() ->
                 new UserNotFoundException("User not found"));
-
-        if(!loggedInUser.getRoleType().equals(Role.ROLE_ADMIN))
-            throw new AccessDeniedException("Access Denied: Admin Privileges required");
-
+        List<String> adminMails = repository.findEmailsByRole(Role.ROLE_ADMIN);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a");
+        LocalDateTime now = LocalDateTime.now();
+        String formattedDateTime = now.format(formatter);
+        eventUtil.sendNormalEvent(userInfo,EmailSubject.USER_DELETED_SUBJECT);
+        eventUtil.sendAccountDeletionEvent(userInfo,adminMails,formattedDateTime,EmailSubject.ACCOUNT_DELETION_SUBJECT);
         log.info("Deleting User with the ID: {}-------------------", userId);
         repository.deleteById(userId);
-        log.info("User deleted successfully");
-            UserEvents events = new UserEvents();
-            events.setSubject(EmailSubject.USER_DELETED_SUBJECT);
-            events.setUserId(userId);
-            events.setName(userInfo.getUserProfile().getLastName()+" "+userInfo.getUserProfile().getFirstName());
-            events.setEmail(userInfo.getEmail());
-            kafkaTemplate.send("user-topic",events);
-
     }
-       // repository.deleteById(userId);
 
-        //UserInfo user = repository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
-
-
-
-    public UserResponse updateUserRole(RoleUpdatedRequest updatedRequest, String userId, Authentication authentication){
-        String email = authentication.getName();
-        UserInfo loggedInUser = repository.findByEmail(email).orElseThrow();
-        if(!loggedInUser.getRoleType().equals(Role.ROLE_ADMIN))
-            throw new AccessDeniedException("Access Denied: Admin privileges required");
+    public UserResponse updateUserRole(RoleUpdatedRequest updatedRequest, String userId){
         UserInfo user = repository.findById(userId).orElseThrow(
                 () -> new InvalidTokenException("Invalid or expired token"));
     user.setRole(updatedRequest.getRole());
@@ -188,11 +166,7 @@ public class AuthService {
     }
 
      @Transactional
-     public RoleResponse createAdmin(CreateAdminRequest request, Authentication authentication){
-         String email = authentication.getName();
-         UserInfo loggedInUser = repository.findByEmail(email).orElseThrow();
-         if(!loggedInUser.getRoleType().equals(Role.ROLE_ADMIN))
-             throw new AccessDeniedException("Access Denied: Admin privileges required");
+     public RoleResponse createAdmin(CreateAdminRequest request){
         UserInfo admin = new UserInfo();
 
         admin.setEmail(request.getEmail());
@@ -280,7 +254,7 @@ public class AuthService {
                     user.getUserProfile().getProfilePicture(),"profile updated successfully",LocalDateTime.now());
         }
 
-        public RoleResponse requestAccountDeletion(String userId, AccountDeletionRequest request) {
+        public RoleResponse requestAccountDeletion(String userId) {
             UserInfo user = repository.findById(userId).orElseThrow(() ->
                     new UserNotFoundException("User not found"));
 
@@ -291,13 +265,15 @@ public class AuthService {
             user.setDeletionRequested(true);
             user.setDeletionRequestedAt(LocalDateTime.now());
             repository.save(user);
-
-            //we need a kafka event here, so maybe a lil change to our event dtos
-
+            List<String> adminMails = repository.findEmailsByRole(Role.ROLE_ADMIN);
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a");
+            String formattedDateTime = now.format(formatter);
+            eventUtil.sendAccountDeletionEvent(user,adminMails,formattedDateTime,EmailSubject.ACCOUNT_DELETION_REQUEST_SUBJECT);
             return new RoleResponse("Account deletion request submitted", LocalDateTime.now());
         }
     public static String generateToken() {
-        int number = secureRandom.nextInt(1_000_000); // 0 to 999999
+        int number = secureRandom.nextInt(1_000_000);
         return String.format("%06d", number);
     }
 }

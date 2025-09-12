@@ -48,19 +48,20 @@ public class AuthController {
    @DeleteMapping("/users/{userId}")
    @PreAuthorize("hasRole('ROLE_ADMIN')")
    public ResponseEntity<?> deleteUser(@PathVariable String userId, Authentication authentication) throws AccessDeniedException {
-        authService.deleteUser(userId,authentication);
+        authService.deleteUser(userId);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully",
                 "timestamp", LocalDateTime.now()));
    }
    @PreAuthorize("hasRole('ROLE_ADMIN')")
    @PostMapping("/admins")
-   public ResponseEntity<RoleResponse> createAdmin(@Valid @RequestBody CreateAdminRequest request, Authentication authentication){
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.createAdmin(request,authentication));
+   public ResponseEntity<RoleResponse> createAdmin(@Valid @RequestBody CreateAdminRequest request){
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.createAdmin(request));
    }
 
    @PatchMapping("/users/{userId}/role")
-   public ResponseEntity<UserResponse> roleUpdated(@RequestBody RoleUpdatedRequest updatedRequest, Authentication authentication, @PathVariable String userId){
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.updateUserRole(updatedRequest,userId,authentication));
+   @PreAuthorize("hasRole('ROLE_ADMIN')")
+   public ResponseEntity<UserResponse> roleUpdated(@RequestBody RoleUpdatedRequest updatedRequest, @PathVariable String userId){
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.updateUserRole(updatedRequest,userId));
    }
 
    @GetMapping("/users/{userId}/info")
@@ -92,7 +93,7 @@ public class AuthController {
 
         @PostMapping("/{userId}/request-deletion")
         @PreAuthorize("#userId == authentication.principal.userId")
-        public ResponseEntity<RoleResponse> requestDeletion(@PathVariable String userId, @RequestBody AccountDeletionRequest request){
-        return  ResponseEntity.ok(authService.requestAccountDeletion(userId,request));
+        public ResponseEntity<RoleResponse> requestDeletion(@PathVariable String userId){
+        return  ResponseEntity.ok(authService.requestAccountDeletion(userId));
         }
 }
