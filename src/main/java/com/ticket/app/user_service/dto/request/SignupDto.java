@@ -20,6 +20,7 @@ public class SignupDto {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
     @JsonProperty("confirm_password")
+    @NotBlank
     private String confirmPassword;
     @NotBlank(message = "FirstName is required")
     @Size(min = 3, max = 20, message = "FirstName must be between 3 and 20 characters")

@@ -41,13 +41,13 @@ public class AuthController {
    }
 
    @PostMapping("/login")
-   public ResponseEntity<UserResponse> authenticate(@RequestBody LoginDto request){
+   public ResponseEntity<UserResponse> authenticate(@Valid @RequestBody LoginDto request){
         return ResponseEntity.status(HttpStatus.OK).body(authService.login(request));
    }
 
    @DeleteMapping("/users/{userId}")
    @PreAuthorize("hasRole('ROLE_ADMIN')")
-   public ResponseEntity<?> deleteUser(@PathVariable String userId, Authentication authentication) throws AccessDeniedException {
+   public ResponseEntity<?> deleteUser(@PathVariable String userId) throws AccessDeniedException {
         authService.deleteUser(userId);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully",
                 "timestamp", LocalDateTime.now()));
@@ -60,7 +60,7 @@ public class AuthController {
 
    @PatchMapping("/users/{userId}/role")
    @PreAuthorize("hasRole('ROLE_ADMIN')")
-   public ResponseEntity<UserResponse> roleUpdated(@RequestBody RoleUpdatedRequest updatedRequest, @PathVariable String userId){
+   public ResponseEntity<UserResponse> roleUpdated(@Valid @RequestBody RoleUpdatedRequest updatedRequest, @PathVariable String userId){
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.updateUserRole(updatedRequest,userId));
    }
 
@@ -70,7 +70,7 @@ public class AuthController {
        return ResponseEntity.status(HttpStatus.OK).body(authService.getUserInfo(userId));
    }
     @PostMapping("/reset-password/request")
-     public ResponseEntity<RoleResponse> resetPassword( @RequestBody ResetPasswordRequest request) {
+     public ResponseEntity<RoleResponse> resetPassword( @Valid @RequestBody ResetPasswordRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.resetPassword(request));
 
     }
@@ -81,7 +81,7 @@ public class AuthController {
         }
         @PutMapping("profiles/{userId}")
         @PreAuthorize("hasRole('ROLE_ADMIN') or #userId == authentication.principal.userId")
-        public ResponseEntity<ProfileResponse> updateProfile(@Valid @RequestBody ProfileUpdateRequest request, @PathVariable String userId){
+        public ResponseEntity<ProfileResponse> updateProfile(@RequestBody ProfileUpdateRequest request, @PathVariable String userId){
             return ResponseEntity.status(HttpStatus.OK).body(authService.updateProfile(userId,request));
         }
 
