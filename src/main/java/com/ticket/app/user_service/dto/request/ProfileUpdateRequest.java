@@ -16,9 +16,7 @@ public class ProfileUpdateRequest {
      private String firstName;
      private String lastName;
     private String phoneNumber;
-    @NotBlank(message = "Address is required")
     private String address;
-    @NotBlank(message = "Date of birth is required")
     private LocalDate dateOfBirth;
     private String profilePictureUrl;
 

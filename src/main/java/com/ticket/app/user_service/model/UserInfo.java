@@ -56,7 +56,7 @@ public class UserInfo {
     @PrePersist
     public void generateId() {
         if (this.userId == null) {
-            this.userId = UUID.randomUUID().toString();  // auto generate string id
+            this.userId = UUID.randomUUID().toString();
         }
     }
     public String getUserId(){
