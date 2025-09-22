@@ -26,6 +26,7 @@ public class JwtUtils {
         claims.put("role",user.getRoleType());
         claims.put("userId",user.getUserId());
         claims.put("firstName", user.getUserProfile().getFirstName());
+        claims.put("lastName", user.getUserProfile().getLastName());
         String token = Jwts.
                 builder()
                 .claims(claims)
