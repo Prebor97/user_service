@@ -5,13 +5,19 @@ import com.ticket.app.user_service.dto.response.ProfileResponse;
 import com.ticket.app.user_service.dto.response.RoleResponse;
 import com.ticket.app.user_service.dto.response.UserInfoResponse;
 import com.ticket.app.user_service.dto.response.UserResponse;
+import com.ticket.app.user_service.jwts.JwtUtils;
 import com.ticket.app.user_service.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
@@ -24,10 +30,14 @@ public class AuthController {
 
    final KafkaTemplate<String, Object> kafkaTemplate;
    private final AuthService authService;
+   private final JwtUtils jwtService;
+   private final UserDetailsService userDetailsService;
 
-    public AuthController(KafkaTemplate<String, Object> kafkaTemplate, AuthService authService) {
+    public AuthController(KafkaTemplate<String, Object> kafkaTemplate, AuthService authService, JwtUtils jwtService, UserDetailsService userDetailsService) {
         this.kafkaTemplate = kafkaTemplate;
         this.authService = authService;
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
     }
 
     @PostMapping("/register")
@@ -96,4 +106,14 @@ public class AuthController {
         public ResponseEntity<RoleResponse> requestDeletion(@PathVariable String userId){
         return  ResponseEntity.ok(authService.requestAccountDeletion(userId));
         }
+
+    @GetMapping("/validate")
+    public ResponseEntity<UserDetails> validateToken(@RequestParam String token) {
+            final String userName = jwtService.extractUserName(token);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
+            if(!jwtService.isTokenvalid(token,userDetails)){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        return ResponseEntity.ok(userDetails);
+    }
 }

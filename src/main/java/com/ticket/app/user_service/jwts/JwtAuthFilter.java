@@ -1,10 +1,13 @@
 package com.ticket.app.user_service.jwts;
 
+import com.ticket.app.eventdto.UserEvents;
 import jakarta.persistence.Column;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +25,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
+    public JwtAuthFilter(JwtUtils jwtUtils, KafkaTemplate<String, Object> kafkaTemplate, UserDetailsService userDetailsService) {
         this.jwtUtils = jwtUtils;
         this.userDetailsService = userDetailsService;
     }
@@ -46,7 +49,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 authenticationToken.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
+
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
             }
         }
         filterChain.doFilter(request,response);

@@ -113,7 +113,7 @@ public class AuthService {
     public String deactivateAccount(String userId){
         UserInfo userInfo = repository.findById(userId).orElseThrow(()->new UserNotFoundException("User with id does not exist"));
         userInfo.setActive(false);
-        eventUtil.sendNormalEvent(userInfo,"Account Deactivation");
+        eventUtil.sendNormalEvent(userInfo,EmailSubject.ACCOUNT_DEACTIVATION_SUBJECT);
         repository.save(userInfo);
         return "Account Deactivated";
     }
