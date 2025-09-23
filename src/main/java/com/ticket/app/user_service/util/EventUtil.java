@@ -79,9 +79,9 @@ public class EventUtil {
         kafkaTemplate.send("user-topics",events);
     }
 
-    public void EventUserEvent(String userId){
+    public void EventUserEvent(UserInfo userInfo){
         UserEvents events = new UserEvents();
-        events.setUserId(userId);
+        events.setUserId(userInfo.getUserId());
         kafkaTemplate.send("event-user-topics", events);
     }
 }

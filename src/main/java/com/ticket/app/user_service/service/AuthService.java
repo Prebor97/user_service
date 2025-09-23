@@ -152,7 +152,7 @@ public class AuthService {
         String formattedDateTime = now.format(formatter);
         eventUtil.sendNormalEvent(userInfo,EmailSubject.USER_DELETED_SUBJECT);
         eventUtil.sendAccountDeletionEvent(userInfo,adminMails,formattedDateTime,EmailSubject.ACCOUNT_DELETION_SUBJECT);
-        eventUtil.EventUserEvent(userId);
+        eventUtil.EventUserEvent(userInfo);
         log.info("Deleting User with the ID: {}-------------------", userId);
         repository.deleteById(userId);
     }
