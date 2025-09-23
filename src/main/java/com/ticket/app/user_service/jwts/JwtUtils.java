@@ -23,8 +23,13 @@ public class JwtUtils {
 
     public String generateToken(UserInfo user) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("role",user.getRoleType());
+        claims.put("userId",user.getUserId());
+        claims.put("firstName", user.getUserProfile().getFirstName());
+        claims.put("lastName", user.getUserProfile().getLastName());
         String token = Jwts.
                 builder()
+                .claims(claims)
                 .subject(user.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() +  10 * 60 * 1000))

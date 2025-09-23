@@ -12,6 +12,6 @@ import java.util.Optional;
 public interface UserInfoRepository extends JpaRepository<UserInfo, String> {
 
     Optional<UserInfo> findByEmail(String email);
-    @Query("SELECT u.email FROM UserInfo u WHERE u.role = :role")
+    @Query("SELECT u.email FROM UserInfo u WHERE u.roleType = :role")
     List<String> findEmailsByRole(@Param("role") Role role);
 }
