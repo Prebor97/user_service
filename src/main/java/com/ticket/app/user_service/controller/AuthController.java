@@ -8,26 +8,23 @@ import com.ticket.app.user_service.dto.response.UserResponse;
 import com.ticket.app.user_service.jwts.JwtUtils;
 import com.ticket.app.user_service.service.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/api/auth")
 public class AuthController {
-
    final KafkaTemplate<String, Object> kafkaTemplate;
    private final AuthService authService;
    private final JwtUtils jwtService;
@@ -44,6 +41,11 @@ public class AuthController {
    public ResponseEntity<UserResponse> register(@Valid @RequestBody SignupDto request){
       return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
    }
+
+    @GetMapping("/gitCallback")
+    public ResponseEntity<UserResponse> callback(@RequestParam("code") String code) {
+        return ResponseEntity.status(HttpStatus.OK).body(authService.gitOauthLogin(code));
+    }
 
    @PatchMapping("/activate/{userId}")
    public ResponseEntity<String> activateUser(@PathVariable String userId){

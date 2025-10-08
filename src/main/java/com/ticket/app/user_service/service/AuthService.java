@@ -20,6 +20,8 @@ import com.ticket.app.user_service.util.EmailSubject;
 import com.ticket.app.user_service.util.EventUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,18 +31,29 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
 @Service
 public class AuthService {
 
+    @Value("${github.client.id}")
+    private String clientId;
+
+    @Value("${github.client.secret}")
+    private String clientSecret;
+
+    @Value("${github.redirect.url}")
+    private String redirectUrl;
+    private final RestTemplate restTemplate = new RestTemplate();
     private final UserInfoRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -51,7 +64,6 @@ public class AuthService {
     private final UserProfileRepository userProfileRepository;
     private final EventUtil eventUtil;
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-
 
     public AuthService(UserInfoRepository repository, PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager, JwtUtils jwtUtils,
@@ -74,22 +86,16 @@ public class AuthService {
         if (repository.findByEmail(dto.getEmail()).isPresent())
             throw new IllegalArgumentException("Email taken");
 
-        UserInfo user = new UserInfo();
-        user.setEmail(dto.getEmail());
-        if (dto.getPassword().equals(dto.getConfirmPassword()))
-            user.setPassword(passwordEncoder.encode(dto.getPassword()));
-        else throw new PasswordMismatchException("Passwords do not match");
-
         UserProfile profile = new UserProfile();
         profile.setFirstName(dto.getFirstName());
         profile.setLastName(dto.getLastName());
         profile.setPhoneNumber(dto.getPhoneNumber());
 
-        user.setRole(Role.ROLE_USER);
-        user.setActive(false);
-        user.setCreatedAt(LocalDate.now());
-        user.setUpdatedAt(LocalDate.now());
-        user.setUserProfile(profile);
+        UserInfo user = saveUser(dto.getEmail(), profile, false);
+
+        if (dto.getPassword().equals(dto.getConfirmPassword()))
+            user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        else throw new PasswordMismatchException("Passwords do not match");
 
     log.info("Saving user-----------------");
         UserInfo savedUser = repository.save(user);
@@ -97,6 +103,59 @@ public class AuthService {
         eventUtil.sendNormalEvent(savedUser,EmailSubject.USER_REGISTERED_SUBJECT);
         return new UserResponse(jwtUtils.generateToken(savedUser),
                 "User registered successfully", LocalDateTime.now());
+    }
+
+    public UserResponse gitOauthLogin(String code) {
+        String token = null;
+        Map<String, String> body = Map.of(
+                "client_id", clientId,
+                "client_secret", clientSecret,
+                "code", code,
+                "redirect_url", redirectUrl
+        );
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> tokenResponse = restTemplate.postForEntity(
+                "https://github.com/login/oauth/access_token", request, Map.class);
+
+        String accessToken = (String) tokenResponse.getBody().get("access_token");
+
+        HttpHeaders authHeaders = new HttpHeaders();
+        authHeaders.setBearerAuth(accessToken);
+        HttpEntity<Void> authEntity = new HttpEntity<>(authHeaders);
+
+        ResponseEntity<Map> userResponse = restTemplate.exchange(
+                "https://api.github.com/user", HttpMethod.GET, authEntity, Map.class);
+
+        Map<String, Object> userData = userResponse.getBody();
+        String[] fullName = userData.get("name").toString().split(" ");
+        String email = userData.get("email").toString();
+
+        if (repository.findByEmail(email).isPresent()) {
+            UserInfo user = repository.findByEmail(email).orElseThrow(() ->
+                    new UserNotFoundException(email));
+            user.setLastLoginAt(LocalDate.now());
+            repository.save(user);
+            eventUtil.sendLastLoggedEvent(user, EmailSubject.USER_LOGGED_IN_SUBJECT);
+            token = jwtUtils.generateToken(user);
+        } else {
+            UserProfile profile = new UserProfile();
+            profile.setFirstName(fullName[1]);
+            profile.setLastName(fullName[0]);
+            profile.setPhoneNumber(null);
+
+            UserInfo user = saveUser(userData.get("email").toString(), profile, true);
+
+            log.info("Saving git oauth user-----------------");
+            UserInfo savedUser = repository.save(user);
+            log.info("User saved with id {} ", savedUser.getUserId());
+            token = jwtUtils.generateToken(savedUser);
+        }
+        return new UserResponse(token,
+                "User logged in with oauth successfully", LocalDateTime.now());
     }
 
     public String activateAccount(String userId){
@@ -276,5 +335,15 @@ public class AuthService {
     public static String generateToken() {
         int number = secureRandom.nextInt(1_000_000);
         return String.format("%06d", number);
+    }
+    private UserInfo saveUser(String mail, UserProfile profile, boolean active){
+        UserInfo user = new UserInfo();
+        user.setEmail(mail);
+        user.setRole(Role.ROLE_USER);
+        user.setActive(active);
+        user.setCreatedAt(LocalDate.now());
+        user.setUpdatedAt(LocalDate.now());
+        user.setUserProfile(profile);
+        return user;
     }
 }
