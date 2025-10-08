@@ -24,6 +24,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/api/auth")
+@CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
    final KafkaTemplate<String, Object> kafkaTemplate;
    private final AuthService authService;
