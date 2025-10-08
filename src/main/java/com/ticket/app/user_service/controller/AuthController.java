@@ -27,14 +27,13 @@ import java.util.Map;
 public class AuthController {
    final KafkaTemplate<String, Object> kafkaTemplate;
    private final AuthService authService;
-   private final JwtUtils jwtService;
-   private final UserDetailsService userDetailsService;
 
-    public AuthController(KafkaTemplate<String, Object> kafkaTemplate, AuthService authService, JwtUtils jwtService, UserDetailsService userDetailsService) {
+
+
+    public AuthController(KafkaTemplate<String, Object> kafkaTemplate, AuthService authService) {
         this.kafkaTemplate = kafkaTemplate;
         this.authService = authService;
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
+
     }
 
     @PostMapping("/register")
@@ -109,13 +108,5 @@ public class AuthController {
         return  ResponseEntity.ok(authService.requestAccountDeletion(userId));
         }
 
-    @GetMapping("/validate")
-    public ResponseEntity<UserDetails> validateToken(@RequestParam String token) {
-            final String userName = jwtService.extractUserName(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userName);
-            if(!jwtService.isTokenvalid(token,userDetails)){
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-        return ResponseEntity.ok(userDetails);
-    }
+
 }
