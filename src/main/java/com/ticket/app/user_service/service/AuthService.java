@@ -131,7 +131,6 @@ public class AuthService {
                 "https://api.github.com/user", HttpMethod.GET, authEntity, Map.class);
 
         Map<String, Object> userData = userResponse.getBody();
-        String[] fullName = userData.get("name").toString().split(" ");
         String email = userData.get("email").toString();
 
         if (repository.findByEmail(email).isPresent()) {
@@ -143,12 +142,13 @@ public class AuthService {
             token = jwtUtils.generateToken(user);
         } else {
             UserProfile profile = new UserProfile();
+            String[] fullName = userData.get("name").toString().split(" ");
             profile.setFirstName(fullName[1]);
             profile.setLastName(fullName[0]);
             profile.setPhoneNumber(null);
 
             log.info("Saving git oauth user-----------------");
-            UserInfo savedUser = repository.save(saveUser(userData.get("email").toString(), profile, true));
+            UserInfo savedUser = repository.save(saveUser(email, profile, true));
             log.info("User saved with id {} ", savedUser.getUserId());
             token = jwtUtils.generateToken(savedUser);
         }
