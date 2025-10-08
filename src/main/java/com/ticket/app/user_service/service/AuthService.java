@@ -147,10 +147,8 @@ public class AuthService {
             profile.setLastName(fullName[0]);
             profile.setPhoneNumber(null);
 
-            UserInfo user = saveUser(userData.get("email").toString(), profile, true);
-
             log.info("Saving git oauth user-----------------");
-            UserInfo savedUser = repository.save(user);
+            UserInfo savedUser = repository.save(saveUser(userData.get("email").toString(), profile, true));
             log.info("User saved with id {} ", savedUser.getUserId());
             token = jwtUtils.generateToken(savedUser);
         }
